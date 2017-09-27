@@ -137,6 +137,11 @@ struct netns_ipv4 {
 	struct tcp_fastopen_context __rcu *tcp_fastopen_ctx;
 	spinlock_t tcp_fastopen_ctx_lock;
 
+	#ifdef OPLUS_BUG_STABILITY
+	//PengHao@CONNECTIVITY.WIFI.INTERNET.1854960,2019/03/30,add for disable tcp random timestamp,some networks limit tcp syn before login
+	int sysctl_tcp_random_timestamp;
+	#endif /* OPLUS_BUG_STABILITY */
+
 #ifdef CONFIG_NET_L3_MASTER_DEV
 	int sysctl_udp_l3mdev_accept;
 #endif
