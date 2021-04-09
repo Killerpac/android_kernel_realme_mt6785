@@ -52,6 +52,7 @@ struct binder_buffer {
 	unsigned free:1;
 	unsigned allow_user_free:1;
 	unsigned async_transaction:1;
+	unsigned oneway_spam_suspect:1;
 	unsigned debug_id:29;
 
 	struct binder_transaction *transaction;
