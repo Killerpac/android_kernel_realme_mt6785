@@ -222,23 +222,25 @@ void tcp_cleanup_congestion_control(struct sock *sk)
 int tcp_set_default_congestion_control(const char *name)
 {
 	struct tcp_congestion_ops *ca;
-	int ret = -ENOENT;
+	const struct tcp_congestion_ops *prev;
+	int ret;
 
-	spin_lock(&tcp_cong_list_lock);
-	ca = tcp_ca_find(name);
-#ifdef CONFIG_MODULES
-	if (!ca && capable(CAP_NET_ADMIN)) {
-		spin_unlock(&tcp_cong_list_lock);
+	rcu_read_lock();
+	ca = tcp_ca_find_autoload(net, name);
+	if (!ca) {
+		ret = -ENOENT;
+	} else if (!try_module_get(ca->owner)) {
+		ret = -EBUSY;
+	} else if (!net_eq(net, &init_net) &&
+			!(ca->flags & TCP_CONG_NON_RESTRICTED)) {
+		/* Only init netns can set default to a restricted algorithm */
+		ret = -EPERM;
+	} else {
+		prev = xchg(&net->ipv4.tcp_congestion_control, ca);
+		if (prev)
+			module_put(prev->owner);
 
-		request_module("tcp_%s", name);
-		spin_lock(&tcp_cong_list_lock);
-		ca = tcp_ca_find(name);
-	}
-#endif
-
-	if (ca) {
-		ca->flags |= TCP_CONG_NON_RESTRICTED;	/* default is always allowed */
-		list_move(&ca->list, &tcp_cong_list);
+		ca->flags |= TCP_CONG_NON_RESTRICTED;
 		ret = 0;
 	}
 	spin_unlock(&tcp_cong_list_lock);
