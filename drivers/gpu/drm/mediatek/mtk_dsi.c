@@ -71,65 +71,45 @@
 
 #define DSI_INTEN 0x08
 
-#define DSI_INTSTA 0x0c
-#define LPRX_RD_RDY_INT_FLAG BIT(0)
-#define CMD_DONE_INT_FLAG BIT(1)
-#define TE_RDY_INT_FLAG BIT(2)
-#define VM_DONE_INT_FLAG BIT(3)
-#define FRAME_DONE_INT_FLAG BIT(4)
-#define VM_CMD_DONE_INT_EN BIT(5)
-#define SLEEPOUT_DONE_INT_FLAG BIT(6)
-#define SKEWCAL_DONE_INT_FLAG BIT(11)
-#define BUFFER_UNDERRUN_INT_FLAG BIT(12)
-#define INP_UNFINISH_INT_EN BIT(14)
-#define SLEEPIN_ULPS_DONE_INT_FLAG BIT(15)
-#define DSI_BUSY BIT(31)
-#define INTSTA_FLD_REG_RD_RDY REG_FLD_MSB_LSB(0, 0)
-#define INTSTA_FLD_REG_CMD_DONE REG_FLD_MSB_LSB(1, 1)
-#define INTSTA_FLD_REG_TE_RDY REG_FLD_MSB_LSB(2, 2)
-#define INTSTA_FLD_REG_VM_DONE REG_FLD_MSB_LSB(3, 3)
-#define INTSTA_FLD_REG_FRM_DONE REG_FLD_MSB_LSB(4, 4)
-#define INTSTA_FLD_REG_VM_CMD_DONE REG_FLD_MSB_LSB(5, 5)
-#define INTSTA_FLD_REG_SLEEPOUT_DONE REG_FLD_MSB_LSB(6, 6)
-#define INTSTA_FLD_REG_BUSY REG_FLD_MSB_LSB(31, 31)
+#define DSI_INTSTA		0x0c
+#define LPRX_RD_RDY_INT_FLAG		BIT(0)
+#define CMD_DONE_INT_FLAG		BIT(1)
+#define TE_RDY_INT_FLAG			BIT(2)
+#define VM_DONE_INT_FLAG		BIT(3)
+#define EXT_TE_RDY_INT_FLAG		BIT(4)
+#define DSI_BUSY			BIT(31)
 
-#define DSI_CON_CTRL 0x10
-#define DSI_RESET BIT(0)
-#define DSI_EN BIT(1)
-#define DSI_PHY_RESET BIT(2)
-#define DSI_DUAL_EN BIT(4)
-#define CON_CTRL_FLD_REG_DUAL_EN REG_FLD_MSB_LSB(4, 4)
-#define DSI_CM_WAIT_FIFO_FULL_EN BIT(27)
+#define DSI_CON_CTRL		0x10
+#define DSI_RESET			BIT(0)
+#define DSI_EN				BIT(1)
 
-#define DSI_MODE_CTRL 0x14
-#define MODE (3)
-#define CMD_MODE 0
-#define SYNC_PULSE_MODE 1
-#define SYNC_EVENT_MODE 2
-#define BURST_MODE 3
-#define FRM_MODE BIT(16)
-#define MIX_MODE BIT(17)
-#define SLEEP_MODE BIT(20)
-#define MODE_FLD_REG_MODE_CON REG_FLD_MSB_LSB(1, 0)
+#define DSI_MODE_CTRL		0x14
+#define MODE				(3)
+#define CMD_MODE			0
+#define SYNC_PULSE_MODE			1
+#define SYNC_EVENT_MODE			2
+#define BURST_MODE			3
+#define FRM_MODE			BIT(16)
+#define MIX_MODE			BIT(17)
 
-#define DSI_TXRX_CTRL 0x18
-#define VC_NUM BIT(1)
-#define LANE_NUM (0xf << 2)
-#define DIS_EOT BIT(6)
-#define NULL_EN BIT(7)
-#define TE_FREERUN BIT(8)
-#define EXT_TE_EN BIT(9)
-#define EXT_TE_EDGE BIT(10)
-#define MAX_RTN_SIZE (0xf << 12)
-#define HSTX_CKLP_EN BIT(16)
-#define TXRX_CTRL_FLD_REG_LANE_NUM REG_FLD_MSB_LSB(5, 2)
-#define TXRX_CTRL_FLD_REG_EXT_TE_EN REG_FLD_MSB_LSB(9, 9)
-#define TXRX_CTRL_FLD_REG_EXT_TE_EDGE REG_FLD_MSB_LSB(10, 10)
-#define TXRX_CTRL_FLD_REG_HSTX_CKLP_EN REG_FLD_MSB_LSB(16, 16)
+#define DSI_TXRX_CTRL		0x18
+#define VC_NUM				BIT(1)
+#define LANE_NUM			(0xf << 2)
+#define DIS_EOT				BIT(6)
+#define NULL_EN				BIT(7)
+#define TE_FREERUN			BIT(8)
+#define EXT_TE_EN			BIT(9)
+#define EXT_TE_EDGE			BIT(10)
+#define MAX_RTN_SIZE			(0xf << 12)
+#define HSTX_CKLP_EN			BIT(16)
 
-#define DSI_PSCTRL 0x1c
-#define DSI_PS_WC	REG_FLD_MSB_LSB(14, 0)
-#define DSI_PS_SEL	REG_FLD_MSB_LSB(18, 16)
+#define DSI_PSCTRL		0x1c
+#define DSI_PS_WC			0x3fff
+#define DSI_PS_SEL			(3 << 16)
+#define PACKED_PS_16BIT_RGB565		(0 << 16)
+#define PACKED_PS_18BIT_RGB666		(1 << 16)
+#define LOOSELY_PS_24BIT_RGB666		(2 << 16)
+#define PACKED_PS_24BIT_RGB888		(3 << 16)
 
 #define DSI_VSA_NL 0x20
 #define DSI_VBP_NL 0x24
@@ -1337,47 +1317,24 @@ static void mtk_dsi_ps_control_vact(struct mtk_dsi *dsi)
 		ps_wc = width * dsi_buf_bpp;
 		SET_VAL_MASK(value, mask, ps_wc * line_back_to_LP, DSI_PS_WC);
 
-		switch (dsi->format) {
-		case MIPI_DSI_FMT_RGB888:
-			SET_VAL_MASK(value, mask, 3, DSI_PS_SEL);
-			break;
-		case MIPI_DSI_FMT_RGB666:
-			SET_VAL_MASK(value, mask, 2, DSI_PS_SEL);
-			break;
-		case MIPI_DSI_FMT_RGB666_PACKED:
-			SET_VAL_MASK(value, mask, 1, DSI_PS_SEL);
-			break;
-		case MIPI_DSI_FMT_RGB565:
-			SET_VAL_MASK(value, mask, 0, DSI_PS_SEL);
-			break;
-		}
-		size = ((height / line_back_to_LP) << 16) + (width * line_back_to_LP);
-	} else {
-		ps_wc = dsc_params->chunk_size;
-		if (dsc_params->slice_mode == 1)
-			ps_wc *= 2;
-
-		SET_VAL_MASK(value, mask, ps_wc, DSI_PS_WC);
-		SET_VAL_MASK(value, mask, 5, DSI_PS_SEL);
-
-		size = (height << 16) + ((ps_wc + 2) / 3);
+	switch (dsi->format) {
+	case MIPI_DSI_FMT_RGB888:
+		ps_bpp_mode |= PACKED_PS_24BIT_RGB888;
+		break;
+	case MIPI_DSI_FMT_RGB666:
+		ps_bpp_mode |= LOOSELY_PS_24BIT_RGB666;
+		break;
+	case MIPI_DSI_FMT_RGB666_PACKED:
+		ps_bpp_mode |= PACKED_PS_18BIT_RGB666;
+		break;
+	case MIPI_DSI_FMT_RGB565:
+		ps_bpp_mode |= PACKED_PS_16BIT_RGB565;
+		break;
 	}
 
-	writel(height / line_back_to_LP, dsi->regs + DSI_VACT_NL);
-
-	val = readl(dsi->regs + DSI_PSCTRL);
-	val = (val & ~mask) | (value & mask);
-	writel(val, dsi->regs + DSI_PSCTRL);
-
-#if !defined(CONFIG_MACH_MT6885) && !defined(CONFIG_MACH_MT6873) \
-	&& !defined(CONFIG_MACH_MT6893) && !defined(CONFIG_MACH_MT6853) \
-	&& !defined(CONFIG_MACH_MT6833) && !defined(CONFIG_MACH_MT6877) \
-	&& !defined(CONFIG_MACH_MT6781)
-	val = vm->hactive * dsi_buf_bpp;
-	writel(val, dsi->regs + DSI_HSTX_CKL_WC);
-#endif
-
-	writel(size, dsi->regs + DSI_SIZE_CON);
+	writel(vm->vactive, dsi->regs + DSI_VACT_NL);
+	writel(ps_bpp_mode, dsi->regs + DSI_PSCTRL);
+	writel(ps_wc, dsi->regs + DSI_HSTX_CKL_WC);
 }
 
 static void mtk_dsi_rxtx_control(struct mtk_dsi *dsi)
@@ -1416,9 +1373,38 @@ static void mtk_dsi_rxtx_control(struct mtk_dsi *dsi)
 #endif
 
 	writel(tmp_reg, dsi->regs + DSI_TXRX_CTRL);
+}
 
-	/* need to config for cmd mode to transmit frame data to DDIC */
-	writel(DSI_WMEM_CONTI, dsi->regs + DSI_MEM_CONTI);
+static void mtk_dsi_ps_control(struct mtk_dsi *dsi)
+{
+	u32 dsi_tmp_buf_bpp;
+	u32 tmp_reg;
+
+	switch (dsi->format) {
+	case MIPI_DSI_FMT_RGB888:
+		tmp_reg = PACKED_PS_24BIT_RGB888;
+		dsi_tmp_buf_bpp = 3;
+		break;
+	case MIPI_DSI_FMT_RGB666:
+		tmp_reg = LOOSELY_PS_24BIT_RGB666;
+		dsi_tmp_buf_bpp = 3;
+		break;
+	case MIPI_DSI_FMT_RGB666_PACKED:
+		tmp_reg = PACKED_PS_18BIT_RGB666;
+		dsi_tmp_buf_bpp = 3;
+		break;
+	case MIPI_DSI_FMT_RGB565:
+		tmp_reg = PACKED_PS_16BIT_RGB565;
+		dsi_tmp_buf_bpp = 2;
+		break;
+	default:
+		tmp_reg = PACKED_PS_24BIT_RGB888;
+		dsi_tmp_buf_bpp = 3;
+		break;
+	}
+
+	tmp_reg += dsi->vm.hactive * dsi_tmp_buf_bpp & DSI_PS_WC;
+	writel(tmp_reg, dsi->regs + DSI_PSCTRL);
 }
 
 static void mtk_dsi_calc_vdo_timing(struct mtk_dsi *dsi)
